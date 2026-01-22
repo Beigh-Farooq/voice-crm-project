@@ -1,0 +1,7 @@
+Django>=4.2
+djangorestframework>=3.14
+django-cors-headers>=4.3
+faster-whisper>=1.0.3
+torch
+torchaudio
+python-multipart
