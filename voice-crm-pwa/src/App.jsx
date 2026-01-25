@@ -1,5 +1,6 @@
 import { useState } from "react";
 import VoiceRecorder from "./Components/VoiceRecorder";
+import EvalDashboard from "./Components/EvalDashboard";
 
 function App() {
   const [result, setResult] = useState(null);
@@ -21,6 +22,7 @@ function App() {
           </pre>
         </>
       )}
+      <EvalDashboard />
     </div>
   );
 }
