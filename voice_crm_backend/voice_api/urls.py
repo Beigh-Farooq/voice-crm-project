@@ -3,7 +3,8 @@ from .views import (
     SpeechToTextView,
     ExtractCRMDataView,
     VoiceToJSONView,
-    EvalListView
+    EvalListView,
+    EvalExportCSV
 )
 
 
@@ -13,4 +14,5 @@ urlpatterns = [
     path("voice-to-json/", VoiceToJSONView.as_view()),
 
     path("evals/", EvalListView.as_view()),
+     path("evals/export/", EvalExportCSV.as_view()),
 ]

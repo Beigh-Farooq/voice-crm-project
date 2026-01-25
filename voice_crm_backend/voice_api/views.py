@@ -15,6 +15,11 @@ from .utils import extract_crm_data
 from .models import EvalResult
 
 
+import csv
+from django.http import HttpResponse
+from rest_framework.views import APIView
+
+
 # Load Whisper once
 whisper_model = WhisperModel("small", compute_type="int8")
 
@@ -106,3 +111,45 @@ class EvalListView(APIView):
         ]
 
         return Response(data)
+
+
+
+class EvalExportCSV(APIView):
+    def get(self, request):
+        response = HttpResponse(content_type="text/csv")
+        response["Content-Disposition"] = "attachment; filename=voice_crm_evals.csv"
+
+        writer = csv.writer(response)
+
+        # Header
+        writer.writerow([
+            "ID",
+            "Transcription",
+            "Customer Name",
+            "Phone",
+            "Address",
+            "City",
+            "Locality",
+            "Summary",
+            "Verified",
+            "Created At"
+        ])
+
+        for e in EvalResult.objects.all().order_by("-created_at"):
+            customer = e.structured_output.get("customer", {})
+            interaction = e.structured_output.get("interaction", {})
+
+            writer.writerow([
+                e.id,
+                e.transcription,
+                customer.get("full_name"),
+                customer.get("phone"),
+                customer.get("address"),
+                customer.get("city"),
+                customer.get("locality"),
+                interaction.get("summary"),
+                e.verified,
+                e.created_at
+            ])
+
+        return response
