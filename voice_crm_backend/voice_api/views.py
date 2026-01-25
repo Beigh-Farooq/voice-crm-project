@@ -12,6 +12,7 @@ from datetime import datetime
 import re
 
 from .utils import extract_crm_data
+from .models import EvalResult
 
 
 # Load Whisper once
@@ -75,8 +76,33 @@ class VoiceToJSONView(APIView):
         os.remove(temp_path)
 
         structured = extract_crm_data(transcription)
+        # 🔴 SAVE EVAL
+        EvalResult.objects.create(
+            transcription=transcription,
+            structured_output=structured,
+            verified=False
+        )
 
         return Response({
             "transcription": transcription,
             "structured_output": structured
         })
+
+
+
+class EvalListView(APIView):
+    def get(self, request):
+        evals = EvalResult.objects.all().order_by("-created_at")
+
+        data = [
+            {
+                "id": e.id,
+                "transcription": e.transcription,
+                "structured_output": e.structured_output,
+                "verified": e.verified,
+                "created_at": e.created_at
+            }
+            for e in evals
+        ]
+
+        return Response(data)
