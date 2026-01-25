@@ -68,7 +68,7 @@ export default function EvalDashboard() {
             <tr>
               <th>ID</th>
               <th>Transcription</th>
-              <th>Verified</th>
+              {/* <th>Verified</th> */}
               <th>Created</th>
             </tr>
           </thead>
@@ -85,7 +85,7 @@ export default function EvalDashboard() {
               <tr key={e.id}>
                 <td>{e.id}</td>
                 <td>{e.transcription}</td>
-                <td>{e.verified ? "✅" : "❌"}</td>
+                {/* <td>{e.verified ? "✅" : "❌"}</td> */}
                 <td>{new Date(e.created_at).toLocaleString()}</td>
               </tr>
             ))}
