@@ -1,72 +1,158 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 export default function VoiceRecorder({ onResult }) {
   const mediaRecorderRef = useRef(null);
   const chunksRef = useRef([]);
+  const timerRef = useRef(null);
+
   const [recording, setRecording] = useState(false);
+  const [paused, setPaused] = useState(false);
+  const [seconds, setSeconds] = useState(0);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
+
+  useEffect(() => {
+    if (recording && !paused) {
+      timerRef.current = setInterval(() => {
+        setSeconds((s) => s + 1);
+      }, 1000);
+    }
+    return () => clearInterval(timerRef.current);
+  }, [recording, paused]);
 
   const startRecording = async () => {
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      const mediaRecorder = new MediaRecorder(stream);
-      mediaRecorderRef.current = mediaRecorder;
-      chunksRef.current = [];
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    const recorder = new MediaRecorder(stream);
 
-      mediaRecorder.ondataavailable = (e) => {
-        if (e.data.size > 0) chunksRef.current.push(e.data);
-      };
+    mediaRecorderRef.current = recorder;
+    chunksRef.current = [];
 
-      mediaRecorder.onstop = async () => {
-        const audioBlob = new Blob(chunksRef.current, { type: "audio/webm" });
-        await sendToBackend(audioBlob);
-      };
+    recorder.ondataavailable = (e) => {
+      if (e.data.size > 0) chunksRef.current.push(e.data);
+    };
 
-      mediaRecorder.start();
-      setRecording(true);
-    } catch {
-      setError("Microphone permission denied");
-    }
+    recorder.onstop = async () => {
+      if (chunksRef.current.length === 0) return;
+
+      setLoading(true);
+      const audioBlob = new Blob(chunksRef.current, { type: "audio/webm" });
+
+      const formData = new FormData();
+      formData.append("audio", audioBlob);
+
+      const res = await fetch(
+        "http://127.0.0.1:8000/api/voice-to-json/",
+        {
+          method: "POST",
+          body: formData,
+        }
+      );
+
+      const data = await res.json();
+      onResult(data);
+      setLoading(false);
+    };
+
+    recorder.start();
+    setRecording(true);
+    setPaused(false);
+    setSeconds(0);
   };
 
-  const stopRecording = () => {
+  const pauseRecording = () => {
+    mediaRecorderRef.current.pause();
+    setPaused(true);
+  };
+
+  const resumeRecording = () => {
+    mediaRecorderRef.current.resume();
+    setPaused(false);
+  };
+
+  const finishRecording = () => {
+    clearInterval(timerRef.current);
     mediaRecorderRef.current.stop();
     setRecording(false);
   };
 
-  const sendToBackend = async (audioBlob) => {
-    setLoading(true);
-    setError("");
+  const discardRecording = () => {
+    clearInterval(timerRef.current);
+    chunksRef.current = [];
+    setRecording(false);
+    setPaused(false);
+    setSeconds(0);
+  };
 
-    const formData = new FormData();
-    formData.append("audio", audioBlob);
-
-    try {
-      const res = await fetch("http://127.0.0.1:8000/api/voice-to-json/", {
-        method: "POST",
-        body: formData,
-      });
-
-      const data = await res.json();
-      onResult(data);
-    } catch {
-      setError("Backend error");
-    } finally {
-      setLoading(false);
-    }
+  const formatTime = () => {
+    const m = String(Math.floor(seconds / 60)).padStart(2, "0");
+    const s = String(seconds % 60).padStart(2, "0");
+    return `00:${m}:${s}s`;
   };
 
   return (
-    <div style={{ border: "1px solid #ddd", padding: 16, borderRadius: 8 }}>
-      <h3>🎙 Voice Input</h3>
+    <div style={{ textAlign: "center", marginTop: 40 }}>
+      <h1>{formatTime()}</h1>
 
-      {error && <p style={{ color: "red" }}>{error}</p>}
+      {!recording && (
+        <button
+          onClick={startRecording}
+          style={{
+            backgroundColor: "#dc2626",
+            color: "#fff",
+            border: "none",
+            padding: "14px 28px",
+            borderRadius: 6,
+            fontSize: 16,
+            cursor: "pointer",
+          }}
+        >
+          Start Recording
+        </button>
+      )}
 
-      {!recording ? (
-        <button onClick={startRecording}>Start Recording</button>
-      ) : (
-        <button onClick={stopRecording}>Stop Recording</button>
+      {recording && (
+        <div style={{ display: "flex", gap: 12, justifyContent: "center" }}>
+          <button
+            onClick={discardRecording}
+            style={{
+              backgroundColor: "#dc2626",
+              color: "#fff",
+              border: "none",
+              padding: "10px 18px",
+              borderRadius: 4,
+              cursor: "pointer",
+            }}
+          >
+            Discard
+          </button>
+
+          <button
+            onClick={paused ? resumeRecording : pauseRecording}
+            style={{
+              backgroundColor: "#dc2626",
+              color: "#fff",
+              border: "none",
+              padding: "10px 18px",
+              borderRadius: 4,
+              cursor: "pointer",
+            }}
+          >
+            {paused ? "Resume" : "Pause"}
+          </button>
+
+          <button
+            onClick={finishRecording}
+            style={{
+              backgroundColor: "#dc2626",
+              color: "#fff",
+              border: "none",
+              padding: "10px 18px",
+              borderRadius: 4,
+              cursor: "pointer",
+            }}
+          >
+            Finish
+          </button>
+        </div>
       )}
 
       {loading && <p>Processing...</p>}

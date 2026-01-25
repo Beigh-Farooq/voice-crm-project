@@ -1,9 +1,11 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 
 export default function EvalDashboard() {
   const [evals, setEvals] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const navigate = useNavigate();
 
   useEffect(() => {
     fetch("http://127.0.0.1:8000/api/evals/")
@@ -27,6 +29,21 @@ export default function EvalDashboard() {
 
   return (
     <div style={{ marginTop: 40 }}>
+      {/* Back Button */}
+      <button
+        onClick={() => navigate("/")}
+        style={{
+          backgroundColor: "transparent",
+          border: "none",
+          color: "#2563eb",
+          fontSize: 16,
+          cursor: "pointer",
+          marginBottom: 12,
+        }}
+      >
+        ← Back
+      </button>
+
       {/* Header with button */}
       <div
         style={{
@@ -41,7 +58,7 @@ export default function EvalDashboard() {
         <button
           onClick={downloadCSV}
           style={{
-            backgroundColor: "#16a34a", // green
+            backgroundColor: "#16a34a",
             color: "#ffffff",
             padding: "8px 14px",
             border: "none",
@@ -68,14 +85,13 @@ export default function EvalDashboard() {
             <tr>
               <th>ID</th>
               <th>Transcription</th>
-              {/* <th>Verified</th> */}
               <th>Created</th>
             </tr>
           </thead>
           <tbody>
             {evals.length === 0 && (
               <tr>
-                <td colSpan="4" style={{ textAlign: "center" }}>
+                <td colSpan="3" style={{ textAlign: "center" }}>
                   No evals yet
                 </td>
               </tr>
@@ -85,7 +101,6 @@ export default function EvalDashboard() {
               <tr key={e.id}>
                 <td>{e.id}</td>
                 <td>{e.transcription}</td>
-                {/* <td>{e.verified ? "✅" : "❌"}</td> */}
                 <td>{new Date(e.created_at).toLocaleString()}</td>
               </tr>
             ))}
