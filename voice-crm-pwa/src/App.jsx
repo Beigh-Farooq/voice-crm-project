@@ -2,19 +2,24 @@ import { useState } from "react";
 import VoiceRecorder from "./Components/VoiceRecorder";
 
 function App() {
-  const [audioBlob, setAudioBlob] = useState(null);
+  const [result, setResult] = useState(null);
 
   return (
-    <div style={{ maxWidth: "600px", margin: "auto", padding: "1rem" }}>
-      <h2>Voice-based CRM Logger</h2>
+    <div style={{ maxWidth: 700, margin: "auto", padding: 20 }}>
+      <h2>Voice CRM Assistant</h2>
 
-      <VoiceRecorder onRecordingComplete={setAudioBlob} />
+      <VoiceRecorder onResult={setResult} />
 
-      {audioBlob && (
-        <div>
-          <h4>Recorded Audio Preview</h4>
-          <audio controls src={URL.createObjectURL(audioBlob)} />
-        </div>
+      {result && (
+        <>
+          <h3>📝 Transcription</h3>
+          <p>{result.transcription}</p>
+
+          <h3>📦 Structured JSON</h3>
+          <pre style={{ background: "#f4f4f4", padding: 16 }}>
+            {JSON.stringify(result.structured_output, null, 2)}
+          </pre>
+        </>
       )}
     </div>
   );
